@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-id')
         IMAGE_NAME = "yasswdy/student-management:latest"
     }
 
@@ -10,7 +9,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${IMAGE_NAME}", ".")
+                    docker.build("${IMAGE_NAME}")
                 }
             }
         }
@@ -18,11 +17,15 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        docker.image("${IMAGE_NAME}").push()
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-id', 
+                                                     usernameVariable: 'DOCKER_USER', 
+                                                     passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        sh "docker push ${IMAGE_NAME}"
                     }
                 }
             }
         }
     }
 }
+
