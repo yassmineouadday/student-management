@@ -1,13 +1,23 @@
-# Étape 1 : build avec Maven
-FROM maven:3.9.1-jdk-20 AS build
+# Étape 1 : Build avec Maven
+FROM maven:3.9.1-openjdk-17-slim AS build
 WORKDIR /app
+
+# Copier le fichier pom.xml et télécharger les dépendances
 COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copier le reste du code et compiler
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Étape 2 : créer l'image finale
-FROM openjdk:20-jdk-slim
+# Étape 2 : Image runtime
+FROM openjdk:17-slim
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-CMD ["java", "-jar", "app.jar"]
+
+# Copier le jar compilé depuis l'étape de build
+COPY --from=build /app/target/student-management-0.0.1-SNAPSHOT.jar app.jar
+
+# Commande par défaut
+ENTRYPOINT ["java","-jar","app.jar"]
+
 
