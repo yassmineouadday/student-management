@@ -1,16 +1,12 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'jdk17'   // Assure-toi que JDK17 est installé dans Jenkins
-    }
-
     stages {
         stage("Checkout") {
             steps {
                 git branch: "main",
                     url: "https://github.com/Yassmineouadday/student-management.git",
-                    credentialsId: "Eisbuk-pat"   // ID de la credential GitHub (token)
+                    credentialsId: "Eisbuk-pat"
             }
         }
 
