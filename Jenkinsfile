@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-id')
+        DOCKERHUB_CREDENTIALS = credentials('DOCKERHUB_CREDENTIALS')
         IMAGE_NAME = "yasswdy/student-management:latest"
     }
 
