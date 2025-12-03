@@ -38,10 +38,10 @@ pipeline {
 
     post {
         success {
-            echo "Build et push Docker réussis ! 🚀"
+            echo "Build et push Docker réussis ! "
         }
         failure {
-            echo "Build échoué 😢"
+            echo "Build échoué "
         }
     }
 }
