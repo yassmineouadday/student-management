@@ -1,31 +1,30 @@
-
-
 pipeline {
     agent any
 
     stages {
         stage("Checkout") {
             steps {
+                // Le repo est public, pas besoin de credentials
                 git branch: "main",
-                    url: "https://github.com/Yassmineouadday/student-management.git",
-                    credentialsId: "Eisbuk-pat"
+                    url: "https://github.com/Yassmineouadday/student-management.git"
             }
         }
 
         stage("Build") {
             steps {
-                sh "mvn clean package -DskipTests -f student-management/pom.xml"
+                sh "mvn clean package -DskipTests"
             }
         }
 
         stage("Build Docker Image") {
             steps {
-                sh "docker build -t yasswdy/student-management:latest student-management"
+                sh "docker build -t yasswdy/student-management:latest ."
             }
         }
 
         stage("Push Docker Image") {
             steps {
+                // Utilise tes credentials Docker Hub
                 withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     sh 'docker push yasswdy/student-management:latest'
@@ -42,5 +41,4 @@ pipeline {
             echo "Build échoué "
         }
     }
-
 }
