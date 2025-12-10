@@ -1,44 +1,53 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE      = "yasswdy/student-management"
+        DOCKER_CREDENTIAL = "dockerhub-credentials"
+        K8S_DIR           = "k8s"
+    }
+
     stages {
-        stage("Checkout") {
+        stage('Checkout') {
             steps {
-                // Le repo est public, pas besoin de credentials
-                git branch: "main",
-                    url: "https://github.com/Yassmineouadday/student-management.git"
+                // Récupère le code depuis GitHub (origin/main)
+                checkout scm
             }
         }
 
-        stage("Build") {
+        stage('Build') {
             steps {
-                sh "mvn clean package -DskipTests"
+                // Compile le projet et génère le JAR (teste désactivés ici)
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage("Build Docker Image") {
+        stage('Docker build & push') {
             steps {
-                sh "docker build -t yasswdy/student-management:latest ."
-            }
-        }
-
-        stage("Push Docker Image") {
-            steps {
-                // Utilise tes credentials Docker Hub
-                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh 'docker push yasswdy/student-management:latest'
+                script {
+                    // Connexion à Docker Hub avec les credentials configurés dans Jenkins
+                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_CREDENTIAL) {
+                        // Construit l'image Docker à partir du Dockerfile à la racine du projet
+                        def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
+                        // Push avec le tag du build (ex: yasswdy/student-management:12)
+                        image.push()
+                        // Push aussi le tag latest
+                        image.push("latest")
+                    }
                 }
             }
         }
-    }
 
-    post {
-        success {
-            echo "Build et push Docker réussis ! "
-        }
-        failure {
-            echo "Build échoué "
+        stage('Deployment Kubernetes') {
+            steps {
+                // Applique les fichiers YAML dans le cluster (Minikube)
+                sh """
+                  kubectl apply -f ${K8S_DIR}/mysql-secret.yaml
+                  kubectl apply -f ${K8S_DIR}/mysql-pvc.yaml
+                  kubectl apply -f ${K8S_DIR}/mysql-deployment.yaml
+                  kubectl apply -f ${K8S_DIR}/springboot-deployment.yaml
+                """
+            }
         }
     }
 }
